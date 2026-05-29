@@ -1,24 +1,25 @@
 import React from 'react'
 import { useState, useRef } from 'react';
 import emailjs from '@emailjs/browser';
+
 const ContactForm = () => {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const formRef = useRef(null);
+  const [status, setStatus] = useState('idle');
   const [form, setForm] = useState({ name: '', email: '', message: '' });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('sending');
     try {
       await emailjs.sendForm(
-        import.meta.env.VITE_EMAILJS_SERVICE_ID,
-        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-        formRef.current!,
-        import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
+        'Fyp',
+        'template_2qs9486',
+        formRef.current,
+        'qMJ1HvG-2yFxXS1cK'
       );
       setStatus('success');
       setForm({ name: '', email: '', message: '' });
@@ -26,8 +27,10 @@ const ContactForm = () => {
       setStatus('error');
     }
   };
+
   const inputClass =
     'w-full px-4 py-3 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 transition-all duration-200';
+
   return (
     <>
       {/* ── Form ── */}
@@ -58,7 +61,7 @@ const ContactForm = () => {
             <label className="text-xs font-medium text-slate-500">Email Address</label>
             <input
               type="email"
-              name="email"
+              name="email" // Fixed back to 'email' so your typing actually updates the state!
               value={form.email}
               onChange={handleChange}
               required
@@ -111,4 +114,4 @@ const ContactForm = () => {
   )
 }
 
-export default ContactForm
+export default ContactForm;
