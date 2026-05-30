@@ -33,7 +33,7 @@ const startServer = async () => {
     console.log('✅ MySQL Connection initialized');
 
     app.get('/', (req: Request, res: Response) => {
-      res.json({ message: 'Result Management System API is active' });
+      res.json({ message: 'Result Management System API is active Chill Ayesha i am fine' });
     });
 
     app.use('/api', route);
