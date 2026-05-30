@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { SectionTitle, GradeBadge, ActionBtn, TableHead } from '../components';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://your-backend.onrender.com/api';
 
 interface Result {
   id: number;

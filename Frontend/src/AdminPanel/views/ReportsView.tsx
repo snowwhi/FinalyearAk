@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { SectionTitle, TableHead } from '../components';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://your-backend.onrender.com/api';
 
 interface SemesterSummary {
   studentName: string;

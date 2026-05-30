@@ -15,7 +15,7 @@ import {
 import { SectionTitle } from '../StudentDashBoard/Shared/SectionTitle';
 import { GRADE_COLORS } from '../Utils/GradeHelpers';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://your-backend.onrender.com/api';
 
 const StudentDashboard = () => {
   // ========== ALL STATE HOOKS FIRST ==========

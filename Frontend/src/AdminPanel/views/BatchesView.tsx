@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { SectionTitle, StatusPill, ActionBtn } from '../components';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://your-backend.onrender.com/api';
 
 interface Batch {
   id: number;

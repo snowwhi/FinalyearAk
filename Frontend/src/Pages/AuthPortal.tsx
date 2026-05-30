@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import logo from '@/assets/university-logo.png';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://your-backend.onrender.com/api';
 
 const AuthPortal = () => {
   const [isAdmin, setIsAdmin] = useState(false);
