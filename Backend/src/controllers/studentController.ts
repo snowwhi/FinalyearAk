@@ -6,9 +6,9 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
     const studentId = req.params.studentId || (req as any).user?.id;
 
     if (!studentId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Student ID required' 
+      return res.status(400).json({
+        success: false,
+        message: 'Student ID required'
       });
     }
 
@@ -28,15 +28,15 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
 
     const student = (students as any[])[0];
     if (!student) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Student not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found'
       });
     }
 
     // Get semester summaries for GPA
     const [summaries] = await pool.query(
-      `SELECT semester_number, gpa, total_marks
+      `SELECT semester_number, gpa, total_marks, semester_gpts
        FROM semester_summary
        WHERE student_id = ?
        ORDER BY semester_number ASC`,
@@ -46,14 +46,10 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
     // Create summary map
     const summaryMap = new Map();
     (summaries as any[]).forEach(sum => {
-      let gpaValue = '0.00';
-      if (sum.gpa !== null && sum.gpa !== undefined) {
-        const numGpa = parseFloat(sum.gpa);
-        gpaValue = isNaN(numGpa) ? '0.00' : numGpa.toFixed(2);
-      }
       summaryMap.set(sum.semester_number, {
-        gpa: gpaValue,
-        totalMarks: sum.total_marks || 0
+        gpa: sum.gpa || '0.00',
+        totalMarks: sum.total_marks || 0,
+        semesterGpts: parseFloat(sum.semester_gpts) || 0
       });
     });
 
@@ -69,34 +65,33 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
     );
 
     const results = courses as any[];
-    console.log(`Found ${results.length} course records for student ${student.student_name}`);
 
     // Group by semester
     const semestersMap = new Map();
 
     results.forEach(result => {
       const semNum = result.semester_number;
-      
+
       if (!semestersMap.has(semNum)) {
-        const summary = summaryMap.get(semNum) || { gpa: '0.00', totalMarks: 0 };
+        const summary = summaryMap.get(semNum) || { gpa: '0.00', totalMarks: 0, semesterGpts: 0 };
         semestersMap.set(semNum, {
           id: `SEMESTER-${getRomanNumeral(semNum)}`,
           semester_number: semNum,
           gpa: summary.gpa,
+          semesterGpts: summary.semesterGpts,
           totalCr: 0,
           courses: []
         });
       }
-      
+
       const semester = semestersMap.get(semNum);
-      
-      // Fix grade_point_total - parse it properly
+
       let gpValue = '0.00';
       if (result.grade_point_total !== null && result.grade_point_total !== undefined) {
         const numGp = parseFloat(result.grade_point_total);
         gpValue = isNaN(numGp) ? '0.00' : numGp.toFixed(2);
       }
-      
+
       semester.courses.push({
         code: result.course_code,
         title: result.subject_name,
@@ -105,11 +100,19 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
         gp: gpValue,
         grade: result.grade_letter
       });
-      
+
       semester.totalCr += 3;
     });
 
-    // Calculate overall totals
+    // Calculate semester GPA from course grade points
+    semestersMap.forEach((sem: any) => {
+      const semTotalGP = sem.courses.reduce((sum: number, c: any) => sum + (parseFloat(c.gp) || 0), 0);
+      const semTotalCr = sem.totalCr;
+      const calculatedGpa = semTotalCr > 0 ? (semTotalGP / semTotalCr).toFixed(2) : '0.00';
+      sem.gpa = calculatedGpa;
+    });
+
+    // Calculate overall totals from course grade points
     let totalMarksObt = 0;
     let totalMarksMax = 0;
     let totalGradePoints = 0;
@@ -118,12 +121,14 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
     semestersMap.forEach((sem: any) => {
       totalMarksObt += sem.courses.reduce((sum: number, c: any) => sum + (Number(c.marks) || 0), 0);
       totalMarksMax += sem.courses.length * 100;
-      
-      const semesterGPA = parseFloat(sem.gpa);
-      if (!isNaN(semesterGPA) && semesterGPA > 0 && sem.totalCr > 0) {
-        totalGradePoints += semesterGPA * sem.totalCr;
-        totalCredits += sem.totalCr;
-      }
+
+      sem.courses.forEach((c: any) => {
+        const gp = parseFloat(c.gp);
+        if (!isNaN(gp) && gp > 0) {
+          totalGradePoints += gp;
+          totalCredits += 3;
+        }
+      });
     });
 
     const cgpa = totalCredits > 0 ? (totalGradePoints / totalCredits).toFixed(2) : '0.00';
@@ -147,8 +152,6 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
       semesters: Array.from(semestersMap.values())
     };
 
-    console.log(`✅ Returning ${response.semesters.length} semesters for ${student.student_name}`);
-
     res.json({
       success: true,
       data: response
@@ -156,8 +159,8 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Transcript error:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Failed to fetch transcript data',
       error: String(error)
     });
