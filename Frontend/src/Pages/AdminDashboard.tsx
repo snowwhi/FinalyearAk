@@ -13,7 +13,7 @@ import {
 
 type Page = 'dashboard' | 'students' | 'results' | 'batches' | 'subjects' | 'users' | 'reports';
 
-const API_URL = 'https://your-backend.onrender.com/api';
+const API_URL = 'https://finalyearak-1.onrender.com/api';
 
 const AdminPanel = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
