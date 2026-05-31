@@ -11,7 +11,7 @@ const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
 const corsOptions = {
-  origin: 'https://finalyear-ak.vercel.app/',
+  origin: 'https://finalyear-ak.vercel.app',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
