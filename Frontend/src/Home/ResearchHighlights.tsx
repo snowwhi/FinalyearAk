@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import graphImage from '../assets/research.jpg';
+import graphImage from '../assets/Research.jpg';
 import molecularBackground from '../assets/R2.jpg';
 
 const containerVariants: Variants = {
