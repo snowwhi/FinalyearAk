@@ -1,6 +1,10 @@
 import type { Request, Response } from 'express';
 import { getPool } from '../connections/connectToDB.js';
 
+const gradePointMap: Record<string, number> = {
+  'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0
+};
+
 export const getStudentTranscript = async (req: Request, res: Response) => {
   try {
     const studentId = req.params.studentId || (req as any).user?.id;
@@ -34,26 +38,6 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
       });
     }
 
-    // Get semester summaries for GPA (use DB values directly)
-    const [summaries] = await pool.query(
-      `SELECT semester_number, gpa, total_marks, semester_gpts
-       FROM semester_summary
-       WHERE student_id = ?
-       ORDER BY semester_number ASC`,
-      [studentId]
-    );
-
-    // Create summary map
-    const summaryMap = new Map();
-    (summaries as any[]).forEach(sum => {
-      const numGpa = parseFloat(sum.gpa);
-      summaryMap.set(sum.semester_number, {
-        gpa: isNaN(numGpa) ? '0.00' : numGpa.toFixed(2),
-        totalMarks: sum.total_marks || 0,
-        semesterGpts: parseFloat(sum.semester_gpts) || 0
-      });
-    });
-
     // Get all courses for this student
     const [courses] = await pool.query(
       `SELECT sr.semester_number, sr.marks_obtained, sr.grade_point_total, sr.grade_letter,
@@ -74,11 +58,10 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
       const semNum = result.semester_number;
 
       if (!semestersMap.has(semNum)) {
-        const summary = summaryMap.get(semNum) || { gpa: '0.00', totalMarks: 0, semesterGpts: 0 };
         semestersMap.set(semNum, {
           id: `SEMESTER-${getRomanNumeral(semNum)}`,
           semester_number: semNum,
-          gpa: summary.gpa,  // use DB gpa directly
+          gpa: '0.00',
           totalCr: 0,
           courses: []
         });
@@ -95,35 +78,54 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
       semester.courses.push({
         code: result.course_code,
         title: result.subject_name,
-        cr: 3,
         marks: result.marks_obtained,
         gp: gpValue,
         grade: result.grade_letter
       });
+    });
 
-      semester.totalCr += 3;
+    // Calculate semester GPA by back-calculating credits from GP and grade
+    semestersMap.forEach((sem: any) => {
+      let semGP = 0;
+      let semCr = 0;
+
+      sem.courses.forEach((c: any) => {
+        const gp = parseFloat(c.gp);
+        const gradeValue = gradePointMap[c.grade] || 0;
+        // Back-calculate credit hours: credits = gp / grade_point_value
+        const credits = gradeValue > 0 ? Math.round(gp / gradeValue) : 3;
+        if (!isNaN(gp) && gp > 0) {
+          semGP += gp;
+          semCr += credits;
+        }
+        // Store calculated credits on course
+        c.cr = credits > 0 ? credits : 3;
+      });
+
+      sem.gpa = semCr > 0 ? (semGP / semCr).toFixed(2) : '0.00';
+      sem.totalCr = semCr;
     });
 
     // Calculate overall totals
     let totalMarksObt = 0;
     let totalMarksMax = 0;
-    let totalGpa = 0;
-    let semCount = 0;
+    let totalGradePoints = 0;
+    let totalCredits = 0;
 
     semestersMap.forEach((sem: any) => {
       totalMarksObt += sem.courses.reduce((sum: number, c: any) => sum + (Number(c.marks) || 0), 0);
       totalMarksMax += sem.courses.length * 100;
 
-      // Use DB gpa per semester for CGPA
-      const gpa = parseFloat(sem.gpa);
-      if (!isNaN(gpa) && gpa > 0) {
-        totalGpa += gpa;
-        semCount++;
-      }
+      sem.courses.forEach((c: any) => {
+        const gp = parseFloat(c.gp);
+        if (!isNaN(gp) && gp > 0) {
+          totalGradePoints += gp;
+          totalCredits += c.cr || 3;
+        }
+      });
     });
 
-    // CGPA = average of all semester GPAs
-    const cgpa = semCount > 0 ? (totalGpa / semCount).toFixed(2) : '0.00';
+    const cgpa = totalCredits > 0 ? (totalGradePoints / totalCredits).toFixed(2) : '0.00';
     const percentage = totalMarksMax > 0 ? ((totalMarksObt / totalMarksMax) * 100).toFixed(2) : '0';
 
     const response = {
