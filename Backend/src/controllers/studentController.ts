@@ -34,7 +34,7 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
       });
     }
 
-    // Get semester summaries for GPA
+    // Get semester summaries for GPA (use DB values directly)
     const [summaries] = await pool.query(
       `SELECT semester_number, gpa, total_marks, semester_gpts
        FROM semester_summary
@@ -46,8 +46,9 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
     // Create summary map
     const summaryMap = new Map();
     (summaries as any[]).forEach(sum => {
+      const numGpa = parseFloat(sum.gpa);
       summaryMap.set(sum.semester_number, {
-        gpa: sum.gpa || '0.00',
+        gpa: isNaN(numGpa) ? '0.00' : numGpa.toFixed(2),
         totalMarks: sum.total_marks || 0,
         semesterGpts: parseFloat(sum.semester_gpts) || 0
       });
@@ -77,8 +78,7 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
         semestersMap.set(semNum, {
           id: `SEMESTER-${getRomanNumeral(semNum)}`,
           semester_number: semNum,
-          gpa: summary.gpa,
-          semesterGpts: summary.semesterGpts,
+          gpa: summary.gpa,  // use DB gpa directly
           totalCr: 0,
           courses: []
         });
@@ -104,34 +104,26 @@ export const getStudentTranscript = async (req: Request, res: Response) => {
       semester.totalCr += 3;
     });
 
-    // Calculate semester GPA from course grade points
-    semestersMap.forEach((sem: any) => {
-      const semTotalGP = sem.courses.reduce((sum: number, c: any) => sum + (parseFloat(c.gp) || 0), 0);
-      const semTotalCr = sem.totalCr;
-      const calculatedGpa = semTotalCr > 0 ? (semTotalGP / semTotalCr).toFixed(2) : '0.00';
-      sem.gpa = calculatedGpa;
-    });
-
-    // Calculate overall totals from course grade points
+    // Calculate overall totals
     let totalMarksObt = 0;
     let totalMarksMax = 0;
-    let totalGradePoints = 0;
-    let totalCredits = 0;
+    let totalGpa = 0;
+    let semCount = 0;
 
     semestersMap.forEach((sem: any) => {
       totalMarksObt += sem.courses.reduce((sum: number, c: any) => sum + (Number(c.marks) || 0), 0);
       totalMarksMax += sem.courses.length * 100;
 
-      sem.courses.forEach((c: any) => {
-        const gp = parseFloat(c.gp);
-        if (!isNaN(gp) && gp > 0) {
-          totalGradePoints += gp;
-          totalCredits += 3;
-        }
-      });
+      // Use DB gpa per semester for CGPA
+      const gpa = parseFloat(sem.gpa);
+      if (!isNaN(gpa) && gpa > 0) {
+        totalGpa += gpa;
+        semCount++;
+      }
     });
 
-    const cgpa = totalCredits > 0 ? (totalGradePoints / totalCredits).toFixed(2) : '0.00';
+    // CGPA = average of all semester GPAs
+    const cgpa = semCount > 0 ? (totalGpa / semCount).toFixed(2) : '0.00';
     const percentage = totalMarksMax > 0 ? ((totalMarksObt / totalMarksMax) * 100).toFixed(2) : '0';
 
     const response = {
