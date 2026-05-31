@@ -10,7 +10,7 @@ interface SidebarProps {
   adminEmail: string;
 }
 
-export const Sidebar = ({ sidebarOpen, currentPage, onPageChange, onLogout, adminName, adminEmail }: SidebarProps) => (
+export const Sidebar = ({ sidebarOpen, currentPage, onPageChange, onLogout, adminName, adminEmail: _adminEmail }: SidebarProps) => (
   <aside className={`fixed top-0 left-0 z-50 h-screen bg-[#0F172A] shadow-2xl border-r border-white/5
     transition-all duration-300 w-64 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
     

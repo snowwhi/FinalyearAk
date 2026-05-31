@@ -6,7 +6,7 @@ interface TopBarProps {
   adminEmail: string;
 }
 
-export const TopBar = ({ pageTitle, sidebarOpen, onToggleSidebar, adminName, adminEmail }: TopBarProps) => (
+export const TopBar = ({ pageTitle, sidebarOpen, onToggleSidebar, adminName, adminEmail: _adminEmail }: TopBarProps) => (
   <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-[0_1px_15px_rgba(0,0,0,0.02)]">
     <div className="flex items-center gap-4">
       <button 

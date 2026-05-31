@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { SectionTitle, GradeBadge, ActionBtn, TableHead } from '../components';
+import { SectionTitle, GradeBadge, ActionBtn } from '../components';
 
 const API_URL = 'https://your-backend.onrender.com/api';
 

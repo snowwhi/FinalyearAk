@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
+import type React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { newsItems } from '../Data/Data';
 
 
 export default function NewsSection() {
-  const [activeCard, setActiveCard] = useState(null);
+  const [activeCard, setActiveCard] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
 
@@ -16,7 +17,7 @@ export default function NewsSection() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const handleLearnMore = (e) => {
+  const handleLearnMore = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigate(`/news-events`);
   };

@@ -1,24 +1,24 @@
-import React from 'react'
 import { useState, useRef } from 'react';
+import type React from 'react';
 import emailjs from '@emailjs/browser';
 
 const ContactForm = () => {
-  const formRef = useRef(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [status, setStatus] = useState('idle');
   const [form, setForm] = useState({ name: '', email: '', message: '' });
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus('sending');
     try {
       await emailjs.sendForm(
         'Fyp',
         'template_2qs9486',
-        formRef.current,
+        formRef.current!,
         'qMJ1HvG-2yFxXS1cK'
       );
       setStatus('success');
